@@ -36,13 +36,13 @@ const couponCollection = database.collection("coupons")
 async function run() {
   try {
 
- //get all students
- app.get('/students',async(req,res) =>{
+    //get all students
+    app.get('/students', async (req, res) => {
 
-  const cursor = studentsCollection.find();
-  const students =await cursor.toArray();
-  res.send(students);
- })
+      const cursor = studentsCollection.find();
+      const students = await cursor.toArray();
+      res.send(students);
+    })
 
 
     //get a student
@@ -100,13 +100,37 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
+    // student overview 
+    app.post('/studentoverview', async (req, res) => {
+      const date = req.body.date
 
+      const cursor = studentsCollection.find()
+      const result = await cursor.toArray()
+
+      const admitted = result.filter(student => student.programs.length != 0)
+      const registeredToday = result.filter(student => student.admissionDate == date)
+      const admittedToday = []
+      admitted?.map(student => {
+        const temp = student.programs?.some(program => program.payDate == date)
+        if (temp) {
+          admittedToday.push(student)
+        }
+      })
+      const data = {
+        total: result.length,
+        admitted: admitted.length,
+        registeredToday: registeredToday.length,
+        admittedToday: admittedToday.length
+      }
+
+      res.send(data)
+    })
     // Payment OVerview download
     app.post('/download/overview', async (req, res) => {
       const array = req.body
       const payments = array.map(payment => ({
         Id: payment.id,
-        Name:payment.name,
+        Name: payment.name,
         Amount: payment.pamount,
         Type: payment.type,
         Program: `${payment.program ? payment.program : ""}`,
@@ -163,8 +187,8 @@ async function run() {
         Id: result.id,
         Name: result.name,
         MCQ: result.mcqMarks,
-        Writen:result.writenMarks,
-        Total:result.total,
+        Writen: result.writenMarks,
+        Total: result.total,
         Merit: result.merit
       }));
 
@@ -200,7 +224,7 @@ async function run() {
       const array = req.body
       const students = array.map(student => ({
         Title: student.title,
-        Date:student.date,
+        Date: student.date,
         MCQ: `${student.mcqMarks} / ${student.mcqTotal}`,
         Writen: `${student.writenMarks} / ${student.writenTotal}`,
         Total: `${student.writenMarks + student.mcqMarks} / ${student.writenTotal + student.mcqTotal}`,
@@ -233,13 +257,13 @@ async function run() {
     //ekta Coupon paite
     app.get('/getcoupon/:code', async (req, res) => {
       const code = req.params.code
-      
-      const query = { code:code }
+
+      const query = { code: code }
       const result = await couponCollection.findOne(query)
-      if(result ==null){
+      if (result == null) {
         res.send({})
       }
-      else      res.send(result)
+      else res.send(result)
     })
 
 
@@ -489,7 +513,7 @@ async function run() {
                 monthly = monthly + parseInt(payment.pamount)
                 monthlyCount++;
               }
-              else if (payment.type == "Exam Fee" || payment.type == "Note Fee" ) {
+              else if (payment.type == "Exam Fee" || payment.type == "Note Fee") {
 
                 if (payment.type == "Exam Fee") {
                   admissionCount++;
@@ -498,7 +522,7 @@ async function run() {
                 else if (payment.type == 'Note Fee') {
                   note += parseInt(payment.pamount)
                 }
-                
+
               }
               else if (payment.type != "Monthly" && payment.type != "Exam Fee" && payment.type != "Note Fee") {
                 other += parseInt(payment.pamount)
