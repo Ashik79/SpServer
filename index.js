@@ -9,7 +9,7 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
 
 app.listen(port, () => {
-  console.log("port is", port)
+  // console.log("port is", port)
 })
 app.get('/', (req, res) => {
   res.send("server isff running")
@@ -75,7 +75,7 @@ async function run() {
         }
         phoneNumbers.push(obj)
       });
-      console.log(phoneNumbers)
+      // console.log(phoneNumbers)
 
       // send the phone numbers and names
       JSON.stringify(phoneNumbers)
@@ -141,7 +141,7 @@ async function run() {
         Taken_by: payment.ptaken,
 
       }))
-      console.log(payments)
+      // console.log(payments)
       const worksheet = XLSX.utils.json_to_sheet(payments);
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'payments');
@@ -250,7 +250,7 @@ async function run() {
     //ekta exam paite
     app.get('/getexam/:id', async (req, res) => {
       const id = req.params.id
-      console.log(id)
+      // console.log(id)
       const query = { _id: new ObjectId(id) }
       const result = await examsCollection.findOne(query)
       res.send(result)
@@ -316,7 +316,7 @@ async function run() {
 
 
 
-      console.log(data, examId, exam,)
+      // console.log(data, examId, exam,)
     })
 
     //user add korar post
@@ -404,7 +404,7 @@ async function run() {
     app.get('/getuser/:param', async (req, res) => {
       const mail = req.params.param;
       if (mail != "null") {
-        console.log(mail)
+        // console.log(mail)
         const query = {
           email: mail
         }
@@ -419,7 +419,7 @@ async function run() {
     app.post('/admit', async (req, res) => {
       const admissionData = req.body;
 
-      console.log(admissionData)
+      // console.log(admissionData)
       try {
         const result = await studentsCollection.insertOne(admissionData);
         res.send(result);
@@ -448,7 +448,7 @@ async function run() {
     app.post('/api/payments', async (req, res) => {
       const { month, day, year, taker } = req.body;
 
-      console.log(taker)
+      // console.log(taker)
       const cursor = studentsCollection.find()
       const allStudents = await cursor.toArray()
       var total = 0;
@@ -535,7 +535,7 @@ async function run() {
       })
 
       const data = { total, monthly, monthlyCount, note, exam, admissionCount, other, paymentArray }
-      console.log(data)
+      // console.log(data)
       const respond = JSON.stringify(data)
       res.send(respond)
     });
@@ -548,7 +548,7 @@ async function run() {
 
 
       const student = await studentsCollection.findOne({ id: id })
-      console.log(student.attendances)
+      // console.log(student.attendances)
 
       const updatedAttendances = [...student.attendances, attendance]
 
@@ -575,6 +575,24 @@ async function run() {
 
 
     })
+    //staff update
+    app.put('/updatestaff/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await usersCOllection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
 
     //exam er result delete
     app.put('/deleteresult/:id', async (req, res) => {
@@ -583,7 +601,7 @@ async function run() {
       const filter = {
         _id: new ObjectId(id)
       }
-      console.log(data)
+      // console.log(data)
       const options = { upsert: true }
       if (data._id) {
         delete data._id;
