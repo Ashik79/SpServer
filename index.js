@@ -4,6 +4,8 @@ const port = process.env.PORT || 5000;
 const cors = require("cors");
 
 const XLSX = require('xlsx');
+
+
 app.use(express.json({ limit: '10mb' })); // Adjust the limit as needed
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
@@ -178,6 +180,9 @@ async function run() {
       res.send(buffer);
 
     })
+
+    
+
     //Exam er all results Download
     const XLSX = require('xlsx');
 
@@ -441,6 +446,14 @@ async function run() {
         allNames.push(user.name)
       })
       const respond = JSON.stringify(allNames)
+      res.send(respond)
+    })
+    //sob user er  array
+    app.get("/getusersfull", async (req, res) => {
+      const cursor = usersCOllection.find()
+      const allUsers = await cursor.toArray()
+
+      const respond = JSON.stringify(allUsers)
       res.send(respond)
     })
 
