@@ -274,6 +274,14 @@ async function run() {
       const result = await examsCollection.findOne(query)
       res.send(result)
     })
+    //ekta video course paite
+    app.get('/getvideocourse/:id', async (req, res) => {
+      const id = req.params.id
+      // console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const result = await courseCollection.findOne(query)
+      res.send(result)
+    })
     //ekta Coupon paite
     app.get('/getcoupon/:code', async (req, res) => {
       const code = req.params.code
