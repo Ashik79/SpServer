@@ -34,6 +34,7 @@ studentsCollection.createIndex({ id: 1 }, { unique: true });
 const usersCOllection = database.collection("users")
 const examsCollection = database.collection("exams")
 const couponCollection = database.collection("coupons")
+const courseCollection = database.collection("courses")
 
 
 async function run() {
@@ -55,6 +56,19 @@ async function run() {
         id: id
       }
       const result = await studentsCollection.findOne(query)
+      if (result) {
+        res.send(result);
+      } else {
+        res.status(404).send({ message: 'Student not found' });
+      }
+    })
+    //get a staff
+    app.get('/staff/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {
+        _id: new ObjectId(id)
+      }
+      const result = await usersCOllection.findOne(query)
       if (result) {
         res.send(result);
       } else {
@@ -280,6 +294,13 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
+    //Courses page a sob course load kora
+    app.get('/getcourses', async (req, res) => {
+
+      const cursor = courseCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
     app.get('/getcoupons', async (req, res) => {
 
       const cursor = couponCollection.find()
@@ -293,11 +314,20 @@ async function run() {
       const result = await examsCollection.insertOne(exam)
       res.send(result)
     })
+
     app.post('/addcoupon', async (req, res) => {
       const coupon = req.body;
       const result = await couponCollection.insertOne(coupon)
       res.send(result)
     })
+
+    //Course add korar post
+    app.post('/addcourse', async (req, res) => {
+      const course = req.body;
+      const result = await courseCollection.insertOne(course)
+      res.send(result)
+    })
+  
 
     //exam a result add korar post
     app.post('/exam/addresult/:id', async (req, res) => {
@@ -388,6 +418,14 @@ async function run() {
       const id = req.params.id
       const query = { _id: new ObjectId(id) }
       const result = await examsCollection.deleteOne(query)
+      res.send(result)
+    })
+    //course delete korte
+
+    app.delete('/course/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await courseCollection.deleteOne(query)
       res.send(result)
     })
     app.delete('/coupon/delete/:id', async (req, res) => {
@@ -601,6 +639,24 @@ async function run() {
         delete data._id;
       }
       const result = await usersCOllection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //course update
+    app.put('/courseupdate/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await courseCollection.replaceOne(filter, data, options)
       res.send(result)
 
 
