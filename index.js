@@ -286,8 +286,8 @@ async function run() {
     //ekta pdf course paite
     app.get('/getpdfcourse/:id', async (req, res) => {
       const id = req.params.id
-      console.log(id)
-      const query = { _id: new ObjectId(id) }
+      
+      const query = { id: id }
       const result = await pdfCourseCollection.findOne(query,)
       res.send(result)
     })
@@ -470,7 +470,7 @@ async function run() {
 
     app.delete('/pdfcourse/delete/:id', async (req, res) => {
       const id = req.params.id
-      const query = { _id: new ObjectId(id) }
+      const query = { id:id }
       const result = await pdfCourseCollection.deleteOne(query)
       res.send(result)
     })
@@ -714,7 +714,7 @@ async function run() {
       // console.log(data)
       const id = req.params.id;
       const filter = {
-        _id: new ObjectId(id)
+       id:id
       }
       const options = { upsert: true }
       if (data._id) {
