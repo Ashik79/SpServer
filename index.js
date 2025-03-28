@@ -281,483 +281,531 @@ async function run() {
       // console.log(id)
       const query = { _id: new ObjectId(id) }
       const result = await courseCollection.findOne(query)
-      res.send(result)})
-      //ekta pdf course paite
-      app.get('/getpdfcourse/:id', async (req, res) => {
-        const id = req.params.id
-        // console.log(id)
-        const query = { _id: new ObjectId(id) }
-        const result = await pdfCourseCollection.findOne(query)
-        res.send(result)
-      })
-      //ekta Coupon paite
-      app.get('/getcoupon/:code', async (req, res) => {
-        const code = req.params.code
+      res.send(result)
+    })
+    //ekta pdf course paite
+    app.get('/getpdfcourse/:id', async (req, res) => {
+      const id = req.params.id
+      console.log(id)
+      const query = { _id: new ObjectId(id) }
+      const result = await pdfCourseCollection.findOne(query,)
+      res.send(result)
+    })
+    //ekta pdf chapter paite
+    app.get('/getpdfchapter/:id', async (req, res) => {
+      const id = req.params.id
 
-        const query = { code: code }
-        const result = await couponCollection.findOne(query)
-        if (result == null) {
-          res.send({})
+      const query = { "chapters.id": id }
+      const result = await pdfCourseCollection.findOne(query, { projection: { "chapters.$": 1, "_id": 0 } })
+      res.send(result)
+    })
+    //ekta Coupon paite
+    app.get('/getcoupon/:code', async (req, res) => {
+      const code = req.params.code
+
+      const query = { code: code }
+      const result = await couponCollection.findOne(query)
+      if (result == null) {
+        res.send({})
+      }
+      else res.send(result)
+    })
+
+
+    //exam page a sob exam load kora
+    app.get('/getexams', async (req, res) => {
+
+      const cursor = examsCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+    //Courses page a sob course load kora
+    app.get('/getcourses', async (req, res) => {
+
+      const cursor = courseCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+    //PDF Courses page a sob course load kora
+    app.get('/getpdfcourses', async (req, res) => {
+
+      const cursor = pdfCourseCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+    app.get('/getcoupons', async (req, res) => {
+
+      const cursor = couponCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    //exam add korar post
+    app.post('/addexam', async (req, res) => {
+      const exam = req.body;
+      const result = await examsCollection.insertOne(exam)
+      res.send(result)
+    })
+
+    app.post('/addcoupon', async (req, res) => {
+      const coupon = req.body;
+      const result = await couponCollection.insertOne(coupon)
+      res.send(result)
+    })
+
+    //Course add korar post
+    app.post('/addcourse', async (req, res) => {
+      const course = req.body;
+      const result = await courseCollection.insertOne(course)
+      res.send(result)
+    })
+    // PDf Course add korar post
+    app.post('/addpdfcourse', async (req, res) => {
+      const course = req.body;
+      const result = await pdfCourseCollection.insertOne(course)
+      res.send(result)
+    })
+
+
+    //exam a result add korar post
+    app.post('/exam/addresult/:id', async (req, res) => {
+      const examId = req.params.id
+      const data = req.body;
+      const query = { _id: new ObjectId(examId) }
+      const exam = await examsCollection.findOne(query)
+      const duplicate = exam.results.some(result => result.id == data.id);
+      if (duplicate) {
+        return res.status(400).send('Duplicate result for the same student ');
+      }
+
+      exam.results.push(data);
+
+      const updateResult = await examsCollection.updateOne(query, { $set: { results: exam.results } });
+      if (updateResult.modifiedCount === 1) {
+        res.status(200).send('Result added successfully');
+      } else {
+        res.status(500).send('Failed to add result');
+      }
+
+
+
+      // console.log(data, examId, exam,)
+    })
+
+    //user add korar post
+    app.post('/adduser', async (req, res) => {
+      const user = req.body;
+      const result = await usersCOllection.insertOne(user)
+      res.send(result)
+    })
+
+    //Update korte
+    app.put('/student/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        id: id
+      }
+      const result = await studentsCollection.updateOne(filter, updatedData)
+      res.send(result)
+
+    })
+    //Exam result Update korte
+    app.put('/exam/update/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const result = await examsCollection.updateOne(filter, updatedData)
+      res.send(result)
+
+    })
+
+    //eksathe students profile a results add korte
+
+    app.put('/addbulkresults', async (req, res) => {
+      const updates = req.body; // This will be an array of student updates
+
+      // Create an array of bulk operations
+      const bulkOps = updates.map(update => ({
+        updateOne: {
+          filter: { id: update.id },
+          update: { $push: { exams: { $each: update.exams } } }
         }
-        else res.send(result)
-      })
+      }));
+
+      try {
+        // Execute bulk operations
+        const result = await studentsCollection.bulkWrite(bulkOps);
+        res.send(result);
+      } catch (error) {
+        console.error('Error updating students:', error);
+        res.status(500).send('Error updating students');
+      }
+    });
 
 
-      //exam page a sob exam load kora
-      app.get('/getexams', async (req, res) => {
+    //exam delete korte
 
-        const cursor = examsCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-      })
-      //Courses page a sob course load kora
-      app.get('/getcourses', async (req, res) => {
+    app.delete('/exam/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await examsCollection.deleteOne(query)
+      res.send(result)
+    })
+    //course delete korte
 
-        const cursor = courseCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-      })
-      //PDF Courses page a sob course load kora
-      app.get('/getpdfcourses', async (req, res) => {
+    app.delete('/course/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await courseCollection.deleteOne(query)
+      res.send(result)
+    })
+    //pdf course delete korte
 
-        const cursor = pdfCourseCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-      })
-      app.get('/getcoupons', async (req, res) => {
+    app.delete('/pdfcourse/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await pdfCourseCollection.deleteOne(query)
+      res.send(result)
+    })
+    app.delete('/coupon/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await couponCollection.deleteOne(query)
+      res.send(result)
+    })
+    //student delete korte
 
-        const cursor = couponCollection.find()
-        const result = await cursor.toArray()
-        res.send(result)
-      })
+    app.delete('/student/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { id: id }
+      const result = await studentsCollection.deleteOne(query)
+      res.send(result)
+    })
 
-      //exam add korar post
-      app.post('/addexam', async (req, res) => {
-        const exam = req.body;
-        const result = await examsCollection.insertOne(exam)
-        res.send(result)
-      })
-
-      app.post('/addcoupon', async (req, res) => {
-        const coupon = req.body;
-        const result = await couponCollection.insertOne(coupon)
-        res.send(result)
-      })
-
-      //Course add korar post
-      app.post('/addcourse', async (req, res) => {
-        const course = req.body;
-        const result = await courseCollection.insertOne(course)
-        res.send(result)
-      })
-      // PDf Course add korar post
-      app.post('/addpdfcourse', async (req, res) => {
-        const course = req.body;
-        const result = await pdfCourseCollection.insertOne(course)
-        res.send(result)
-      })
-
-
-      //exam a result add korar post
-      app.post('/exam/addresult/:id', async (req, res) => {
-        const examId = req.params.id
-        const data = req.body;
-        const query = { _id: new ObjectId(examId) }
-        const exam = await examsCollection.findOne(query)
-        const duplicate = exam.results.some(result => result.id == data.id);
-        if (duplicate) {
-          return res.status(400).send('Duplicate result for the same student ');
+    // User er name nite
+    app.get('/getuser/:param', async (req, res) => {
+      const mail = req.params.param;
+      if (mail != "null") {
+        // console.log(mail)
+        const query = {
+          email: mail
         }
+        const user = await usersCOllection.findOne(query)
+        res.send(user)
 
-        exam.results.push(data);
+      }
 
-        const updateResult = await examsCollection.updateOne(query, { $set: { results: exam.results } });
-        if (updateResult.modifiedCount === 1) {
-          res.status(200).send('Result added successfully');
+    })
+
+    //admission post
+    app.post('/admit', async (req, res) => {
+      const admissionData = req.body;
+
+      // console.log(admissionData)
+      try {
+        const result = await studentsCollection.insertOne(admissionData);
+        res.send(result);
+      } catch (error) {
+        // Handle duplicate key error (11000) explicitly
+        if (error.code === 11000) {
+          res.status(405).send("Duplicate key error: ID must be unique.");
         } else {
-          res.status(500).send('Failed to add result');
+          res.status(500).send("Error inserting data into MongoDB.");
         }
-
-
-
-        // console.log(data, examId, exam,)
+      }
+    })
+    //sob user er name array
+    app.get("/getusers", async (req, res) => {
+      const cursor = usersCOllection.find()
+      const allUsers = await cursor.toArray()
+      var allNames = []
+      allUsers.map(user => {
+        allNames.push(user.name)
       })
+      const respond = JSON.stringify(allNames)
+      res.send(respond)
+    })
+    //sob user er  array
+    app.get("/getusersfull", async (req, res) => {
+      const cursor = usersCOllection.find()
+      const allUsers = await cursor.toArray()
 
-      //user add korar post
-      app.post('/adduser', async (req, res) => {
-        const user = req.body;
-        const result = await usersCOllection.insertOne(user)
-        res.send(result)
-      })
+      const respond = JSON.stringify(allUsers)
+      res.send(respond)
+    })
 
-      //Update korte
-      app.put('/student/update/:id', async (req, res) => {
-        const id = req.params.id;
-        const updatedData = {
-          $set: req.body
-        }
-        const filter = {
-          id: id
-        }
-        const result = await studentsCollection.updateOne(filter, updatedData)
-        res.send(result)
+    //payment OVerview pete
+    app.post('/api/payments', async (req, res) => {
+      const { month, day, year, taker } = req.body;
 
-      })
-      //Exam result Update korte
-      app.put('/exam/update/:id', async (req, res) => {
-        const id = req.params.id;
-        const updatedData = {
-          $set: req.body
-        }
-        const filter = {
-          _id: new ObjectId(id)
-        }
-        const result = await examsCollection.updateOne(filter, updatedData)
-        res.send(result)
+      // console.log(taker)
+      const cursor = studentsCollection.find()
+      const allStudents = await cursor.toArray()
+      var total = 0;
+      var monthly = 0;
+      var other = 0;
+      var note = 0;
+      var exam = 0;
+      var course = 0;
+      var admissionCount = 0;
+      var monthlyCount = 0;
+      const paymentArray = []
 
-      })
+      allStudents.map(student => {
+        if (student.payments && student.payments.length > 0) {
+          student.payments.map(payment => {
+            var dayMatch = false;
+            var monthMatch = false;
+            var yearMatch = false;
+            var takerMatch = false;
 
-      //eksathe students profile a results add korte
-
-      app.put('/addbulkresults', async (req, res) => {
-        const updates = req.body; // This will be an array of student updates
-
-        // Create an array of bulk operations
-        const bulkOps = updates.map(update => ({
-          updateOne: {
-            filter: { id: update.id },
-            update: { $push: { exams: { $each: update.exams } } }
-          }
-        }));
-
-        try {
-          // Execute bulk operations
-          const result = await studentsCollection.bulkWrite(bulkOps);
-          res.send(result);
-        } catch (error) {
-          console.error('Error updating students:', error);
-          res.status(500).send('Error updating students');
-        }
-      });
+            if (day) {
+              if (payment.date == day)
+                dayMatch = true
+            }
+            else if (!day) {
+              dayMatch = true;
+            }
 
 
-      //exam delete korte
-
-      app.delete('/exam/delete/:id', async (req, res) => {
-        const id = req.params.id
-        const query = { _id: new ObjectId(id) }
-        const result = await examsCollection.deleteOne(query)
-        res.send(result)
-      })
-      //course delete korte
-
-      app.delete('/course/delete/:id', async (req, res) => {
-        const id = req.params.id
-        const query = { _id: new ObjectId(id) }
-        const result = await courseCollection.deleteOne(query)
-        res.send(result)
-      })
-      //pdf course delete korte
-
-      app.delete('/pdfcourse/delete/:id', async (req, res) => {
-        const id = req.params.id
-        const query = { _id: new ObjectId(id) }
-        const result = await pdfCourseCollection.deleteOne(query)
-        res.send(result)
-      })
-      app.delete('/coupon/delete/:id', async (req, res) => {
-        const id = req.params.id
-        const query = { _id: new ObjectId(id) }
-        const result = await couponCollection.deleteOne(query)
-        res.send(result)
-      })
-      //student delete korte
-
-      app.delete('/student/delete/:id', async (req, res) => {
-        const id = req.params.id
-        const query = { id: id }
-        const result = await studentsCollection.deleteOne(query)
-        res.send(result)
-      })
-
-      // User er name nite
-      app.get('/getuser/:param', async (req, res) => {
-        const mail = req.params.param;
-        if (mail != "null") {
-          // console.log(mail)
-          const query = {
-            email: mail
-          }
-          const user = await usersCOllection.findOne(query)
-          res.send(user)
-
-        }
-
-      })
-
-      //admission post
-      app.post('/admit', async (req, res) => {
-        const admissionData = req.body;
-
-        // console.log(admissionData)
-        try {
-          const result = await studentsCollection.insertOne(admissionData);
-          res.send(result);
-        } catch (error) {
-          // Handle duplicate key error (11000) explicitly
-          if (error.code === 11000) {
-            res.status(405).send("Duplicate key error: ID must be unique.");
-          } else {
-            res.status(500).send("Error inserting data into MongoDB.");
-          }
-        }
-      })
-      //sob user er name array
-      app.get("/getusers", async (req, res) => {
-        const cursor = usersCOllection.find()
-        const allUsers = await cursor.toArray()
-        var allNames = []
-        allUsers.map(user => {
-          allNames.push(user.name)
-        })
-        const respond = JSON.stringify(allNames)
-        res.send(respond)
-      })
-      //sob user er  array
-      app.get("/getusersfull", async (req, res) => {
-        const cursor = usersCOllection.find()
-        const allUsers = await cursor.toArray()
-
-        const respond = JSON.stringify(allUsers)
-        res.send(respond)
-      })
-
-      //payment OVerview pete
-      app.post('/api/payments', async (req, res) => {
-        const { month, day, year, taker } = req.body;
-
-        // console.log(taker)
-        const cursor = studentsCollection.find()
-        const allStudents = await cursor.toArray()
-        var total = 0;
-        var monthly = 0;
-        var other = 0;
-        var note = 0;
-        var exam = 0;
-        var course = 0;
-        var admissionCount = 0;
-        var monthlyCount = 0;
-        const paymentArray = []
-
-        allStudents.map(student => {
-          if (student.payments && student.payments.length > 0) {
-            student.payments.map(payment => {
-              var dayMatch = false;
-              var monthMatch = false;
-              var yearMatch = false;
-              var takerMatch = false;
-
-              if (day) {
-                if (payment.date == day)
-                  dayMatch = true
-              }
-              else if (!day) {
-                dayMatch = true;
-              }
-
-
-              if (month) {
-                if (payment.month == month) {
-                  monthMatch = true;
-                }
-              }
-              else if (!month) {
+            if (month) {
+              if (payment.month == month) {
                 monthMatch = true;
               }
+            }
+            else if (!month) {
+              monthMatch = true;
+            }
 
-              if (year) {
-                if (payment.year == year) {
-                  yearMatch = true;
-                }
-              }
-              else if (!year) {
+            if (year) {
+              if (payment.year == year) {
                 yearMatch = true;
               }
+            }
+            else if (!year) {
+              yearMatch = true;
+            }
 
-              if (taker) {
-                if (payment.ptaken == taker) {
-                  takerMatch = true;
-                }
-              }
-              else if (!taker) {
+            if (taker) {
+              if (payment.ptaken == taker) {
                 takerMatch = true;
               }
+            }
+            else if (!taker) {
+              takerMatch = true;
+            }
 
 
 
-              if (dayMatch && monthMatch && takerMatch && yearMatch) {
-                paymentArray.push(payment)
-                total = total + parseInt(payment.pamount)
-                if (payment.type == "Monthly") {
-                  monthly = monthly + parseInt(payment.pamount)
-                  monthlyCount++;
-                }
-                else if (payment.type == "Exam Fee" || payment.type == "Note Fee") {
-
-                  if (payment.type == "Exam Fee") {
-                    admissionCount++;
-                    exam += parseInt(payment.pamount)
-                  }
-                  else if (payment.type == 'Note Fee') {
-                    note += parseInt(payment.pamount)
-                  }
-
-                }
-                else if (payment.type != "Monthly" && payment.type != "Exam Fee" && payment.type != "Note Fee") {
-                  other += parseInt(payment.pamount)
-                }
+            if (dayMatch && monthMatch && takerMatch && yearMatch) {
+              paymentArray.push(payment)
+              total = total + parseInt(payment.pamount)
+              if (payment.type == "Monthly") {
+                monthly = monthly + parseInt(payment.pamount)
+                monthlyCount++;
               }
+              else if (payment.type == "Exam Fee" || payment.type == "Note Fee") {
 
-            })
+                if (payment.type == "Exam Fee") {
+                  admissionCount++;
+                  exam += parseInt(payment.pamount)
+                }
+                else if (payment.type == 'Note Fee') {
+                  note += parseInt(payment.pamount)
+                }
+
+              }
+              else if (payment.type != "Monthly" && payment.type != "Exam Fee" && payment.type != "Note Fee") {
+                other += parseInt(payment.pamount)
+              }
+            }
+
+          })
+        }
+      })
+
+      const data = { total, monthly, monthlyCount, note, exam, admissionCount, other, paymentArray }
+      // console.log(data)
+      const respond = JSON.stringify(data)
+      res.send(respond)
+    });
+
+    //attendance add
+
+    app.post('/attendance/:id', async (req, res) => {
+      const id = req.params.id
+      const attendance = req.body
+
+
+      const student = await studentsCollection.findOne({ id: id })
+      // console.log(student.attendances)
+
+      const updatedAttendances = [...student.attendances, attendance]
+
+
+      const result = await studentsCollection.updateOne({ id: id }, { $set: { attendances: updatedAttendances } })
+
+      res.send(result)
+    })
+
+    //payment add
+    app.put('/addpayment/:id', async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const filter = {
+        id: id
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await studentsCollection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //staff update
+    app.put('/updatestaff/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await usersCOllection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //course update
+    app.put('/courseupdate/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await courseCollection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //pdf course update
+    app.put('/pdfcourseupdate/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await pdfCourseCollection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //pdf chapter update
+    app.put('/updatepdfchapter/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+
+      const result = await pdfCourseCollection.updateOne(
+        { "chapters.id": id },
+        {
+          $set: {
+            "chapters.$[chapter]": data
           }
-        })
-
-        const data = { total, monthly, monthlyCount, note, exam, admissionCount, other, paymentArray }
-        // console.log(data)
-        const respond = JSON.stringify(data)
-        res.send(respond)
-      });
-
-      //attendance add
-
-      app.post('/attendance/:id', async (req, res) => {
-        const id = req.params.id
-        const attendance = req.body
-
-
-        const student = await studentsCollection.findOne({ id: id })
-        // console.log(student.attendances)
-
-        const updatedAttendances = [...student.attendances, attendance]
-
-
-        const result = await studentsCollection.updateOne({ id: id }, { $set: { attendances: updatedAttendances } })
-
-        res.send(result)
-      })
-
-      //payment add
-      app.put('/addpayment/:id', async (req, res) => {
-        const data = req.body;
-        const id = req.params.id;
-        const filter = {
-          id: id
-        }
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await studentsCollection.replaceOne(filter, data, options)
-        res.send(result)
+        },
+        { arrayFilters: [{ "chapter.id": data.id }] }
+      )
+      res.send(result)
 
 
 
-      })
-      //staff update
-      app.put('/updatestaff/:id', async (req, res) => {
-        const data = req.body;
-        // console.log(data)
-        const id = req.params.id;
-        const filter = {
-          _id: new ObjectId(id)
-        }
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await usersCOllection.replaceOne(filter, data, options)
-        res.send(result)
+    })
+    //pdf file update
+    app.put('/updatepdffile/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+console.log (id)
+      const result = await pdfCourseCollection.updateOne(
+        { "chapters.Pdfs.id": id },
+        {
+          $set: { "chapters.$[].Pdfs.$[file]": data
+          }
+        },
+        { arrayFilters: [{ "file.id": id }] }
+      )
+      res.send(result)
 
 
 
-      })
-      //course update
-      app.put('/courseupdate/:id', async (req, res) => {
-        const data = req.body;
-        // console.log(data)
-        const id = req.params.id;
-        const filter = {
-          _id: new ObjectId(id)
-        }
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await courseCollection.replaceOne(filter, data, options)
-        res.send(result)
+    })
+
+    //exam er result delete
+    app.put('/deleteresult/:id', async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      // console.log(data)
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await examsCollection.replaceOne(filter, data, options)
+      res.send(result)
 
 
 
-      })
-      //pdf course update
-      app.put('/pdfcourseupdate/:id', async (req, res) => {
-        const data = req.body;
-        // console.log(data)
-        const id = req.params.id;
-        const filter = {
-          _id: new ObjectId(id)
-        }
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await pdfCourseCollection.replaceOne(filter, data, options)
-        res.send(result)
+    })
+    //Result add
+    app.put('/addresult/:id', async (req, res) => {
+      const data = req.body;
+      const id = req.params.id;
+      const filter = {
+        id: id
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await studentsCollection.replaceOne(filter, data, options)
+      res.send(result)
+
+    })
 
 
+  } finally {
+    // Ensures that the client will close when you finish/error
 
-      })
-
-      //exam er result delete
-      app.put('/deleteresult/:id', async (req, res) => {
-        const data = req.body;
-        const id = req.params.id;
-        const filter = {
-          _id: new ObjectId(id)
-        }
-        // console.log(data)
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await examsCollection.replaceOne(filter, data, options)
-        res.send(result)
-
-
-
-      })
-      //Result add
-      app.put('/addresult/:id', async (req, res) => {
-        const data = req.body;
-        const id = req.params.id;
-        const filter = {
-          id: id
-        }
-        const options = { upsert: true }
-        if (data._id) {
-          delete data._id;
-        }
-        const result = await studentsCollection.replaceOne(filter, data, options)
-        res.send(result)
-
-      })
-
-
-    } finally {
-      // Ensures that the client will close when you finish/error
-
-    }
   }
+}
 
 
 
