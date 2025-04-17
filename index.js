@@ -2,7 +2,7 @@ const express = require('express')
 const app = express()
 const port = process.env.PORT || 5000;
 const cors = require("cors");
-
+const Fuse = require('fuse.js');
 const XLSX = require('xlsx');
 
 
@@ -114,9 +114,27 @@ async function run() {
     // Search students 
     app.post('/students', async (req, res) => {
       const query = req.body
-      const cursor = studentsCollection.find(query)
-      const result = await cursor.toArray()
-      res.send(result)
+      if (!query.name) {
+        const cursor = studentsCollection.find(query)
+        const result = await cursor.toArray()
+        res.send(result)
+      }
+      else {
+        const students = await studentsCollection.find({}).toArray()
+        const fuse = new Fuse(students, {
+          keys: ['name'],
+          threshold: 0.3, // lower = stricter match (0.2~0.4 is a good range)
+        });
+
+        const keyword = query.name;
+        const fuzzyResults = fuse.search(keyword);
+        const matchedStudents = fuzzyResults
+          .sort((a, b) => a.score - b.score) // sort by how close the match is
+          .slice(0, 10)
+          .map(result => result.item);      // return only student objects
+
+        res.send(matchedStudents);
+      }
     })
     // student overview 
     app.post('/studentoverview', async (req, res) => {
