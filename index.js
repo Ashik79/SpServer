@@ -65,6 +65,7 @@ const examsCollection = database.collection("exams")
 const couponCollection = database.collection("coupons")
 const courseCollection = database.collection("courses")
 const pdfCourseCollection = database.collection("pdfcourses")
+const infoCollection = database.collection("info")
 
 
 async function run() {
@@ -643,6 +644,30 @@ async function run() {
       try {
         const result = await studentsCollection.insertOne(admissionData);
         res.send(result);
+      } catch (error) {
+        // Handle duplicate key error (11000) explicitly
+        if (error.code === 11000) {
+          res.status(405).send("Duplicate key error: ID must be unique.");
+        } else {
+          res.status(500).send("Error inserting data into MongoDB.");
+        }
+      }
+    })
+    //web admission post
+    app.post('/admit-web', async (req, res) => {
+      let admissionData = req.body;
+
+      let info =await infoCollection.findOne({_id:new ObjectId("68028a296bda6025d2e225f5")})
+      delete info._id
+      const registerCount = info.webRegisterCount
+      
+      const roll =100000+registerCount+1
+      admissionData.id=roll
+      info.webRegisterCount++
+      try {
+        const result = await studentsCollection.insertOne(admissionData);
+        const updateCount =await infoCollection.updateOne({_id:new ObjectId("68028a296bda6025d2e225f5")},{$set:info})
+        res.send({result:result,id:roll,status:true});
       } catch (error) {
         // Handle duplicate key error (11000) explicitly
         if (error.code === 11000) {
