@@ -3,9 +3,10 @@ const app = express()
 const port = process.env.PORT || 5000;
 const cors = require("cors");
 const Fuse = require('fuse.js');
+require('dotenv').config()
 const XLSX = require('xlsx');
-
-
+const crypto = require('crypto')
+const OTP_SECRET = process.env.OTP_SECRET
 app.use(express.json({ limit: '10mb' })); // Adjust the limit as needed
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cors());
@@ -14,11 +15,11 @@ app.listen(port, () => {
   // console.log("port is", port)
 })
 app.get('/', (req, res) => {
-  res.send("server isff running")
+  res.send("server is now running running")
 })
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-const uri = `mongodb+srv://brandshop:brandshop1212@cluster0.ak91fsl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ak91fsl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -28,6 +29,34 @@ const client = new MongoClient(uri, {
   }
 });
 
+//otp part
+
+
+
+// Generate a random 6-digit OTP
+function generateOtp() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+// Create a hash with OTP, phone and expiry time
+function generateOtpHash({ otp, phone, expires }) {
+  const data = `${phone}.${otp}.${expires}`;
+  return crypto.createHmac('sha256', OTP_SECRET).update(data).digest('hex');
+}
+
+// Verify hash without storing anything in memory
+function isOtpValid({ otp, phone, expires, originalHash }) {
+  if (Date.now() > parseInt(expires)) return { status: false, message: "Code Expired" };
+  const newHash = generateOtpHash({ otp, phone, expires });
+
+  if (newHash === originalHash) {
+    return { status: true }
+  }
+  else return { status: false, message: "Invalid Code" }
+}
+
+
+//database part
 const database = client.db("spoffice");
 const studentsCollection = database.collection("students");
 studentsCollection.createIndex({ id: 1 }, { unique: true });
@@ -40,6 +69,73 @@ const pdfCourseCollection = database.collection("pdfcourses")
 
 async function run() {
   try {
+    //send connect otp
+    app.post('/connect', async (req, res) => {
+      const { phone, id } = req.body
+      const student = await studentsCollection.findOne({ id: id })
+      if (!student) {
+        return res.send({ message: "No student found", status: false })
+      }
+
+      if (student.email) {
+        return res.send({ message: "Another email connected already !", status: false })
+      }
+      if (student.phone != phone) {
+        return res.send({ message: "Wrong Information", status: false })
+      }
+      else {
+        console.log(phone)
+        const otp = generateOtp();
+        const expires = Date.now() + 5 * 60 * 1000; // 5 mins
+        const hash = generateOtpHash({ otp, phone, expires });
+      
+        const smsResponse = await fetch('https://bulksmsbd.net/api/smsapi', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            api_key: 'CUOP72nJJHahM30djaQG',
+            senderid: '8809617642567',
+            number: phone,
+            message: `Enter code ${otp} to connect your profile. \nSOHAG PHYSICS`
+
+          }),
+        })
+        const result2 = await smsResponse.json();
+
+        if (result2.response_code == 202) {
+
+          res.send({ message: "Otp Sent Successfully", hash: hash, status: true, expires: expires })
+        }
+        else (res.send({ message: "sms server error", status: false }))
+
+      }
+
+
+
+    })
+
+    //connect otp verify
+    app.post('/connect-verify', async (req, res) => {
+      const { phone, hash, expires, otp, id, email } = req.body
+      
+      const validResponse = isOtpValid({ otp, phone, expires, originalHash: hash })
+      
+      if (!validResponse.status) {
+        res.send(validResponse)
+      }
+      else if (validResponse.status) {
+        const student = await studentsCollection.findOne({ id: id })
+        let newStudent = { ...student, email: email }
+        if (newStudent._id) { delete newStudent._id }
+        const updateResponse = await studentsCollection.updateOne({ id: id }, { $set: newStudent })
+        if (updateResponse.modifiedCount) {
+          res.send({ status: true, message: "Account Connected !", student: student })
+        }
+      }
+
+    })
 
     //get all students
     app.get('/students', async (req, res) => {
@@ -304,7 +400,7 @@ async function run() {
     //ekta pdf course paite
     app.get('/getpdfcourse/:id', async (req, res) => {
       const id = req.params.id
-      
+
       const query = { id: id }
       const result = await pdfCourseCollection.findOne(query,)
       res.send(result)
@@ -488,7 +584,7 @@ async function run() {
 
     app.delete('/pdfcourse/delete/:id', async (req, res) => {
       const id = req.params.id
-      const query = { id:id }
+      const query = { id: id }
       const result = await pdfCourseCollection.deleteOne(query)
       res.send(result)
     })
@@ -517,6 +613,23 @@ async function run() {
         }
         const user = await usersCOllection.findOne(query)
         res.send(user)
+
+      }
+
+    })
+    app.get('/getstudent/:param', async (req, res) => {
+      const mail = req.params.param;
+      if (mail != "null") {
+        // console.log(mail)
+        const query = {
+          email: mail
+        }
+        const user = await studentsCollection.findOne(query)
+
+        if (user) {
+          res.send([user])
+        }
+        else res.send([])
 
       }
 
@@ -732,7 +845,7 @@ async function run() {
       // console.log(data)
       const id = req.params.id;
       const filter = {
-       id:id
+        id: id
       }
       const options = { upsert: true }
       if (data._id) {
@@ -769,11 +882,12 @@ async function run() {
       const data = req.body;
       // console.log(data)
       const id = req.params.id;
-console.log (id)
+      console.log(id)
       const result = await pdfCourseCollection.updateOne(
         { "chapters.Pdfs.id": id },
         {
-          $set: { "chapters.$[].Pdfs.$[file]": data
+          $set: {
+            "chapters.$[].Pdfs.$[file]": data
           }
         },
         { arrayFilters: [{ "file.id": id }] }
