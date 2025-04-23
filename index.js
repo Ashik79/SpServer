@@ -63,7 +63,7 @@ studentsCollection.createIndex({ id: 1 }, { unique: true });
 const usersCOllection = database.collection("users")
 const examsCollection = database.collection("exams")
 const couponCollection = database.collection("coupons")
-const courseCollection = database.collection("courses")
+const videoCourseCollection = database.collection("videoCourses")
 const pdfCourseCollection = database.collection("pdfcourses")
 const infoCollection = database.collection("info")
 
@@ -390,14 +390,7 @@ async function run() {
       const result = await examsCollection.findOne(query)
       res.send(result)
     })
-    //ekta video course paite
-    app.get('/getvideocourse/:id', async (req, res) => {
-      const id = req.params.id
-      // console.log(id)
-      const query = { _id: new ObjectId(id) }
-      const result = await courseCollection.findOne(query)
-      res.send(result)
-    })
+  
     //ekta pdf course paite
     app.get('/getpdfcourse/:id', async (req, res) => {
       const id = req.params.id
@@ -412,6 +405,22 @@ async function run() {
 
       const query = { "chapters.id": id }
       const result = await pdfCourseCollection.findOne(query, { projection: { "chapters.$": 1, "_id": 0 } })
+      res.send(result)
+    })
+    //ekta video course paite
+    app.get('/getvideocourse/:id', async (req, res) => {
+      const id = req.params.id
+
+      const query = { id: id }
+      const result = await videoCourseCollection.findOne(query,)
+      res.send(result)
+    })
+    //ekta video chapter paite
+    app.get('/getvideochapter/:id', async (req, res) => {
+      const id = req.params.id
+
+      const query = { "chapters.id": id }
+      const result = await videoCourseCollection.findOne(query, { projection: { "chapters.$": 1, "_id": 0 } })
       res.send(result)
     })
     //ekta Coupon paite
@@ -448,6 +457,13 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
+    //Video Courses page a sob course load kora
+    app.get('/getvideocourses', async (req, res) => {
+
+      const cursor = videoCourseCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
     app.get('/getcoupons', async (req, res) => {
 
       const cursor = couponCollection.find()
@@ -478,6 +494,12 @@ async function run() {
     app.post('/addpdfcourse', async (req, res) => {
       const course = req.body;
       const result = await pdfCourseCollection.insertOne(course)
+      res.send(result)
+    })
+    // Video Course add korar post
+    app.post('/addvideocourse', async (req, res) => {
+      const course = req.body;
+      const result = await videoCourseCollection.insertOne(course)
       res.send(result)
     })
 
@@ -587,6 +609,14 @@ async function run() {
       const id = req.params.id
       const query = { id: id }
       const result = await pdfCourseCollection.deleteOne(query)
+      res.send(result)
+    })
+    //video course delete korte
+
+    app.delete('/videocourse/delete/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { id: id }
+      const result = await videoCourseCollection.deleteOne(query)
       res.send(result)
     })
     app.delete('/coupon/delete/:id', async (req, res) => {
@@ -913,6 +943,64 @@ async function run() {
         {
           $set: {
             "chapters.$[].Pdfs.$[file]": data
+          }
+        },
+        { arrayFilters: [{ "file.id": id }] }
+      )
+      res.send(result)
+
+
+
+    })
+    //video course update
+    app.put('/videocourseupdate/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      const filter = {
+        id: id
+      }
+      const options = { upsert: true }
+      if (data._id) {
+        delete data._id;
+      }
+      const result = await videoCourseCollection.replaceOne(filter, data, options)
+      res.send(result)
+
+
+
+    })
+    //video chapter update
+    app.put('/updatevideochapter/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+
+      const result = await videoCourseCollection.updateOne(
+        { "chapters.id": id },
+        {
+          $set: {
+            "chapters.$[chapter]": data
+          }
+        },
+        { arrayFilters: [{ "chapter.id": data.id }] }
+      )
+      res.send(result)
+
+
+
+    })
+    //video file update
+    app.put('/updatevideofile/:id', async (req, res) => {
+      const data = req.body;
+      // console.log(data)
+      const id = req.params.id;
+      console.log(id)
+      const result = await videoCourseCollection.updateOne(
+        { "chapters.Videos.id": id },
+        {
+          $set: {
+            "chapters.$[].Videos.$[file]": data
           }
         },
         { arrayFilters: [{ "file.id": id }] }
