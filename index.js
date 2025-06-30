@@ -29,6 +29,25 @@ const client = new MongoClient(uri, {
   }
 });
 
+
+//firebase admin sdk for officials
+
+const admin = require("firebase-admin");
+const serviceAccount = require("./admin-firebase-secret.json");
+
+admin.initializeApp({
+  credential: admin.credential.cert(serviceAccount)
+});
+
+const listAllUsers = async () => {
+  const listUsersResult = await admin.auth().listUsers(1000);
+  listUsersResult.users.forEach(userRecord => {
+   
+  });
+};
+listAllUsers()
+
+
 //otp part
 
 
@@ -89,7 +108,7 @@ async function run() {
         const otp = generateOtp();
         const expires = Date.now() + 5 * 60 * 1000; // 5 mins
         const hash = generateOtpHash({ otp, phone, expires });
-      
+
         const smsResponse = await fetch('https://bulksmsbd.net/api/smsapi', {
           method: 'POST',
           headers: {
@@ -120,9 +139,9 @@ async function run() {
     //connect otp verify
     app.post('/connect-verify', async (req, res) => {
       const { phone, hash, expires, otp, id, email } = req.body
-      
+
       const validResponse = isOtpValid({ otp, phone, expires, originalHash: hash })
-      
+
       if (!validResponse.status) {
         res.send(validResponse)
       }
@@ -390,7 +409,7 @@ async function run() {
       const result = await examsCollection.findOne(query)
       res.send(result)
     })
-  
+
     //ekta pdf course paite
     app.get('/getpdfcourse/:id', async (req, res) => {
       const id = req.params.id
@@ -687,17 +706,17 @@ async function run() {
     app.post('/admit-web', async (req, res) => {
       let admissionData = req.body;
 
-      let info =await infoCollection.findOne({_id:new ObjectId("68028a296bda6025d2e225f5")})
+      let info = await infoCollection.findOne({ _id: new ObjectId("68028a296bda6025d2e225f5") })
       delete info._id
       const registerCount = info.webRegisterCount
-      
-      const roll =100000+registerCount+1
-      admissionData.id=roll
+
+      const roll = 100000 + registerCount + 1
+      admissionData.id = roll
       info.webRegisterCount++
       try {
         const result = await studentsCollection.insertOne(admissionData);
-        const updateCount =await infoCollection.updateOne({_id:new ObjectId("68028a296bda6025d2e225f5")},{$set:info})
-        res.send({result:result,id:roll,status:true});
+        const updateCount = await infoCollection.updateOne({ _id: new ObjectId("68028a296bda6025d2e225f5") }, { $set: info })
+        res.send({ result: result, id: roll, status: true });
       } catch (error) {
         // Handle duplicate key error (11000) explicitly
         if (error.code === 11000) {
@@ -724,6 +743,36 @@ async function run() {
       const allUsers = await cursor.toArray()
 
       const respond = JSON.stringify(allUsers)
+      res.send(respond)
+    })
+
+    //sob user er  manage korar list
+    app.get("/getusersmanage", async (req, res) => {
+      const cursor = usersCOllection.find()
+      const DBUsers = await cursor.toArray()
+
+      const Users=[];
+
+      const firebaseUsers = await admin.auth().listUsers(1000);
+     firebaseUsers.users.forEach(userRecord => {
+        const email =userRecord.email
+        const dbuser=DBUsers.find(user => user.email==email)
+        const customizedUser ={
+          name:dbuser.name,
+          email:email,
+          photo:dbuser.photo,
+          role:dbuser.role,
+          accountCreated:userRecord.metadata.creationTime,
+          lastRefreshed:userRecord.metadata.lastRefreshTime,
+          lastLogin:userRecord.metadata.lastSignInTime,
+
+        }
+        Users.push(customizedUser)
+        
+
+      });
+
+      const respond = JSON.stringify(Users)
       res.send(respond)
     })
 
