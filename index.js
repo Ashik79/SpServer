@@ -42,7 +42,7 @@ admin.initializeApp({
 const listAllUsers = async () => {
   const listUsersResult = await admin.auth().listUsers(1000);
   listUsersResult.users.forEach(userRecord => {
-   
+    console.log(userRecord);
   });
 };
 listAllUsers()
@@ -751,30 +751,60 @@ async function run() {
       const cursor = usersCOllection.find()
       const DBUsers = await cursor.toArray()
 
-      const Users=[];
+      const Users = [];
 
       const firebaseUsers = await admin.auth().listUsers(1000);
-     firebaseUsers.users.forEach(userRecord => {
-        const email =userRecord.email
-        const dbuser=DBUsers.find(user => user.email==email)
-        const customizedUser ={
-          name:dbuser.name,
-          email:email,
-          photo:dbuser.photo,
-          role:dbuser.role,
-          accountCreated:userRecord.metadata.creationTime,
-          lastRefreshed:userRecord.metadata.lastRefreshTime,
-          lastLogin:userRecord.metadata.lastSignInTime,
+      firebaseUsers.users.forEach(userRecord => {
+        const email = userRecord.email
+        const dbuser = DBUsers.find(user => user.email == email)
+        const customizedUser = {
+          name: dbuser.name,
+          email: email,
+          photo: dbuser.photo,
+          role: dbuser.role,
+          accountCreated: userRecord.metadata.creationTime,
+          lastRefreshed: userRecord.metadata.lastRefreshTime,
+          lastLogin: userRecord.metadata.lastSignInTime,
+          disabled: userRecord.disabled,
 
         }
         Users.push(customizedUser)
-        
+
 
       });
 
       const respond = JSON.stringify(Users)
       res.send(respond)
     })
+
+    //user er password change korte 
+    
+
+    app.post("/change-user-password", async (req, res) => {
+   
+console.log('data',email,newPassword)
+      if (!email || !newPassword) {
+        return res.status(400).json({ error: "Email and newPassword are required." });
+      }
+
+      try {
+       
+        const user = await admin.auth().getUserByEmail(email);
+
+        // Update the password
+        await admin.auth().updateUser(user.uid, {
+          password: newPassword,
+        });
+
+        res.json({
+          success: true,
+          message: `Password updated for ${email}`,
+        });
+      } catch (error) {
+        res.status(400).json({ error: error.message });
+      }
+    });
+
 
     //payment OVerview pete
     app.post('/api/payments', async (req, res) => {
