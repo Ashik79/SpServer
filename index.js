@@ -477,6 +477,16 @@ async function run() {
       res.send(result);
     })
     
+    //Get only published exams in descending order (newest first)
+    app.get('/getpublishedexams', async (req, res) => {
+      const cursor = examsCollection.find({
+        "published.status": true
+      }).sort({ _id: -1 });
+      
+      const result = await cursor.toArray();
+      res.send(result);
+    })
+    
     //Courses page a sob course load kora
     app.get('/getcourses', async (req, res) => {
 
