@@ -85,6 +85,7 @@ const couponCollection = database.collection("coupons")
 const videoCourseCollection = database.collection("videoCourses")
 const pdfCourseCollection = database.collection("pdfcourses")
 const infoCollection = database.collection("info")
+const noticeCollection = database.collection("notices")
 
 
 async function run() {
@@ -512,6 +513,33 @@ async function run() {
 
       const cursor = couponCollection.find()
       const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    //Notice endpoints
+    //Insert a new notice
+    app.post('/insertnotice', async (req, res) => {
+      const notice = req.body;
+      const result = await noticeCollection.insertOne(notice)
+      res.send(result)
+    })
+
+    //Get first notice document
+    app.get('/getnotice', async (req, res) => {
+      const result = await noticeCollection.findOne()
+      res.send(result)
+    })
+
+    //Update notice by id
+    app.put('/updatenotice/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const result = await noticeCollection.updateOne(filter, updatedData)
       res.send(result)
     })
 
