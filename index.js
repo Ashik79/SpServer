@@ -42,7 +42,7 @@ admin.initializeApp({
 const listAllUsers = async () => {
   const listUsersResult = await admin.auth().listUsers(1000);
   listUsersResult.users.forEach(userRecord => {
-    console.log(userRecord);
+    // console.log(userRecord);
   });
 };
 listAllUsers()
@@ -383,6 +383,7 @@ async function run() {
         MCQ: `${student.mcqMarks} / ${student.mcqTotal}`,
         Writen: `${student.writenMarks} / ${student.writenTotal}`,
         Total: `${student.writenMarks + student.mcqMarks} / ${student.writenTotal + student.mcqTotal}`,
+        Merit: `${student.merit} / ${student.totalParticipants}`
 
 
 
@@ -462,6 +463,20 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
+    
+    //Get exams for a specific student by ID
+    app.get('/getexams/:id', async (req, res) => {
+      const studentId = req.params.id;
+      
+      const cursor = examsCollection.find({
+        "results.id": studentId
+      });
+      
+      const result = await cursor.toArray();
+  
+      res.send(result);
+    })
+    
     //Courses page a sob course load kora
     app.get('/getcourses', async (req, res) => {
 
@@ -566,8 +581,8 @@ async function run() {
       }
       const result = await studentsCollection.updateOne(filter, updatedData)
       res.send(result)
-
     })
+    
     //Exam result Update korte
     app.put('/exam/update/:id', async (req, res) => {
       const id = req.params.id;
