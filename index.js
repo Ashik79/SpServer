@@ -86,6 +86,7 @@ const videoCourseCollection = database.collection("videoCourses")
 const pdfCourseCollection = database.collection("pdfcourses")
 const infoCollection = database.collection("info")
 const noticeCollection = database.collection("notices")
+const bannerCollection = database.collection("banners")
 
 
 async function run() {
@@ -540,6 +541,42 @@ async function run() {
         _id: new ObjectId(id)
       }
       const result = await noticeCollection.updateOne(filter, updatedData)
+      res.send(result)
+    })
+
+    //Banner endpoints
+    //Get all banners
+    app.get('/getbanners', async (req, res) => {
+      const cursor = bannerCollection.find()
+      const result = await cursor.toArray()
+      res.send(result)
+    })
+
+    //Insert a new banner
+    app.post('/insertbanner', async (req, res) => {
+      const banner = req.body;
+      const result = await bannerCollection.insertOne(banner)
+      res.send(result)
+    })
+
+    //Update banner by id
+    app.put('/updatebanner/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const result = await bannerCollection.updateOne(filter, updatedData)
+      res.send(result)
+    })
+
+    //Delete banner by id
+    app.delete('/deletebanner/:id', async (req, res) => {
+      const id = req.params.id
+      const query = { _id: new ObjectId(id) }
+      const result = await bannerCollection.deleteOne(query)
       res.send(result)
     })
 
