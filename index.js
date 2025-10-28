@@ -88,6 +88,7 @@ const infoCollection = database.collection("info")
 const noticeCollection = database.collection("notices")
 const bannerCollection = database.collection("banners")
 const promoVideosCollection = database.collection("promoVideos")
+const batchtimeCollection = database.collection("batchtime")
 
 
 async function run() {
@@ -605,6 +606,33 @@ async function run() {
         _id: new ObjectId(id)
       }
       const result = await promoVideosCollection.updateOne(filter, updatedData)
+      res.send(result)
+    })
+
+    //Batchtime endpoints
+    //Insert a new batchtime
+    app.post('/insertbatchtime', async (req, res) => {
+      const batchtime = req.body;
+      const result = await batchtimeCollection.insertOne(batchtime)
+      res.send(result)
+    })
+
+    //Get first batchtime document
+    app.get('/getbatchtime', async (req, res) => {
+      const result = await batchtimeCollection.findOne()
+      res.send(result)
+    })
+
+    //Update batchtime by id
+    app.put('/updatebatchtime/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const result = await batchtimeCollection.updateOne(filter, updatedData)
       res.send(result)
     })
 
