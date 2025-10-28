@@ -87,6 +87,7 @@ const pdfCourseCollection = database.collection("pdfcourses")
 const infoCollection = database.collection("info")
 const noticeCollection = database.collection("notices")
 const bannerCollection = database.collection("banners")
+const promoVideosCollection = database.collection("promoVideos")
 
 
 async function run() {
@@ -577,6 +578,33 @@ async function run() {
       const id = req.params.id
       const query = { _id: new ObjectId(id) }
       const result = await bannerCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    //Promo Videos endpoints
+    //Insert a new promo video
+    app.post('/insertpromovideo', async (req, res) => {
+      const promoVideo = req.body;
+      const result = await promoVideosCollection.insertOne(promoVideo)
+      res.send(result)
+    })
+
+    //Get first promo video document
+    app.get('/getpromovideo', async (req, res) => {
+      const result = await promoVideosCollection.findOne()
+      res.send(result)
+    })
+
+    //Update promo video by id
+    app.put('/updatepromovideo/:id', async (req, res) => {
+      const id = req.params.id;
+      const updatedData = {
+        $set: req.body
+      }
+      const filter = {
+        _id: new ObjectId(id)
+      }
+      const result = await promoVideosCollection.updateOne(filter, updatedData)
       res.send(result)
     })
 
