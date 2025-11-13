@@ -208,7 +208,8 @@ async function run() {
 
         const obj = {
           phone: student.phone,
-          name: student.name
+          name: student.name,
+          id: student.id
         }
         phoneNumbers.push(obj)
       });
