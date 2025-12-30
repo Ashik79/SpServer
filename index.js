@@ -637,6 +637,41 @@ async function run() {
       res.send(result)
     })
 
+    //Add a new class segment
+    app.post('/addclass/:batchtimeId', async (req, res) => {
+      const batchtimeId = req.params.batchtimeId;
+      const newClass = req.body;
+      
+      const result = await batchtimeCollection.updateOne(
+        { _id: new ObjectId(batchtimeId) },
+        { $push: { classes: newClass } }
+      );
+      res.send(result);
+    })
+
+    //Update a specific class segment
+    app.put('/updateclass/:batchtimeId/:classId', async (req, res) => {
+      const { batchtimeId, classId } = req.params;
+      const updatedClass = req.body;
+      
+      const result = await batchtimeCollection.updateOne(
+        { _id: new ObjectId(batchtimeId), 'classes.id': classId },
+        { $set: { 'classes.$': updatedClass } }
+      );
+      res.send(result);
+    })
+
+    //Delete a specific class segment
+    app.delete('/deleteclass/:batchtimeId/:classId', async (req, res) => {
+      const { batchtimeId, classId } = req.params;
+      
+      const result = await batchtimeCollection.updateOne(
+        { _id: new ObjectId(batchtimeId) },
+        { $pull: { classes: { id: classId } } }
+      );
+      res.send(result);
+    })
+
     //exam add korar post
     app.post('/addexam', async (req, res) => {
       const exam = req.body;
