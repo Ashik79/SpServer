@@ -9,7 +9,10 @@ const crypto = require('crypto')
 const OTP_SECRET = process.env.OTP_SECRET
 app.use(express.json({ limit: '10mb' })); // Adjust the limit as needed
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:5174", "http://localhost:5175", "http://localhost:5176", "https://spoffice-server.vercel.app", "https://sohag-physics.vercel.app", "https://sohagphysics.web.app", "https://sohag-physics.web.app", /\.vercel\.app$/],
+  credentials: true
+}));
 
 app.listen(port, () => {
   // console.log("port is", port)
@@ -19,7 +22,8 @@ app.get('/', (req, res) => {
 })
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
-const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.ak91fsl.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`
+const uri = `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@ac-jk6nj3m-shard-00-00.ak91fsl.mongodb.net:27017,ac-jk6nj3m-shard-00-01.ak91fsl.mongodb.net:27017,ac-jk6nj3m-shard-00-02.ak91fsl.mongodb.net:27017/?ssl=true&replicaSet=atlas-o20m74-shard-0&authSource=admin&retryWrites=true&w=majority&appName=Cluster0`
+// const uri = 'mongodb://127.0.0.1:27017/spoffice';
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
@@ -468,30 +472,30 @@ async function run() {
       const result = await cursor.toArray()
       res.send(result)
     })
-    
+
     //Get exams for a specific student by ID
     app.get('/getexams/:id', async (req, res) => {
       const studentId = req.params.id;
-      
+
       const cursor = examsCollection.find({
         "results.id": studentId
       });
-      
+
       const result = await cursor.toArray();
-  
+
       res.send(result);
     })
-    
+
     //Get only published exams in descending order (newest first)
     app.get('/getpublishedexams', async (req, res) => {
       const cursor = examsCollection.find({
         "published.status": true
       }).sort({ _id: -1 });
-      
+
       const result = await cursor.toArray();
       res.send(result);
     })
-    
+
     //Courses page a sob course load kora
     app.get('/getcourses', async (req, res) => {
 
@@ -641,7 +645,7 @@ async function run() {
     app.post('/addclass/:batchtimeId', async (req, res) => {
       const batchtimeId = req.params.batchtimeId;
       const newClass = req.body;
-      
+
       const result = await batchtimeCollection.updateOne(
         { _id: new ObjectId(batchtimeId) },
         { $push: { classes: newClass } }
@@ -653,7 +657,7 @@ async function run() {
     app.put('/updateclass/:batchtimeId/:classId', async (req, res) => {
       const { batchtimeId, classId } = req.params;
       const updatedClass = req.body;
-      
+
       const result = await batchtimeCollection.updateOne(
         { _id: new ObjectId(batchtimeId), 'classes.id': classId },
         { $set: { 'classes.$': updatedClass } }
@@ -664,7 +668,7 @@ async function run() {
     //Delete a specific class segment
     app.delete('/deleteclass/:batchtimeId/:classId', async (req, res) => {
       const { batchtimeId, classId } = req.params;
-      
+
       const result = await batchtimeCollection.updateOne(
         { _id: new ObjectId(batchtimeId) },
         { $pull: { classes: { id: classId } } }
@@ -749,7 +753,7 @@ async function run() {
       const result = await studentsCollection.updateOne(filter, updatedData)
       res.send(result)
     })
-    
+
     //Exam result Update korte
     app.put('/exam/update/:id', async (req, res) => {
       const id = req.params.id;
@@ -960,17 +964,17 @@ async function run() {
     })
 
     //user er password change korte 
-    
+
 
     app.post("/change-user-password", async (req, res) => {
-   
-console.log('data',email,newPassword)
+
+      console.log('data', email, newPassword)
       if (!email || !newPassword) {
         return res.status(400).json({ error: "Email and newPassword are required." });
       }
 
       try {
-       
+
         const user = await admin.auth().getUserByEmail(email);
 
         // Update the password
