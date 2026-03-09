@@ -130,8 +130,8 @@ async function run() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            api_key: 'CUOP72nJJHahM30djaQG',
-            senderid: '8809617642567',
+            api_key: process.env.SMS_API_KEY,
+            senderid: process.env.SENDER_ID,
             number: phone,
             message: `Enter code ${otp} to connect your profile. \nSOHAG PHYSICS`
 
@@ -798,6 +798,34 @@ async function run() {
       }
     });
 
+    // Send Bulk SMS proxy for OMR results
+    app.post('/send-bulk-sms', async (req, res) => {
+      const { messages } = req.body;
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).send({ message: "Invalid messages data", status: false });
+      }
+
+      try {
+        const smsResponse = await fetch('https://bulksmsbd.net/api/smsapimany', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            api_key: process.env.SMS_API_KEY,
+            senderid: process.env.SENDER_ID,
+            messages: messages.map(m => ({
+              to: m.phone || m.to, // Support both phone and to keys
+              message: m.message
+            }))
+          }),
+        });
+
+        const result = await smsResponse.json();
+        res.send(result);
+      } catch (error) {
+        console.error("Bulk SMS Error:", error);
+        res.status(500).send({ message: "SMS server error", status: false });
+      }
+    });
 
     //exam delete korte
 
