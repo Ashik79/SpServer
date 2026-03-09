@@ -41,22 +41,26 @@ const client = new MongoClient(uri, {
 
 
 //firebase admin sdk for officials
-
 const admin = require("firebase-admin");
-const serviceAccount = require("./admin-firebase-secret.json");
-
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
-
-const listAllUsers = async () => {
-  const listUsersResult = await admin.auth().listUsers(1000);
-  listUsersResult.users.forEach(userRecord => {
-    // console.log(userRecord);
+try {
+  const serviceAccount = require("./admin-firebase-secret.json");
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
   });
-};
-listAllUsers()
+  console.log('[Firebase] Admin SDK Initialized');
 
+  const listAllUsers = async () => {
+    try {
+      const listUsersResult = await admin.auth().listUsers(10);
+      // listUsersResult.users.forEach(userRecord => console.log(userRecord));
+    } catch (e) {
+      console.warn('[Firebase] listAllUsers failed (non-critical):', e.message);
+    }
+  };
+  listAllUsers();
+} catch (err) {
+  console.warn('[Firebase] Initialization skipped:', err.message);
+}
 
 //otp part
 
